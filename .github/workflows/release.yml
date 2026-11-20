@@ -1,0 +1,104 @@
+# Each new release of @zwave-js/config, built, tested and published
+# the day it comes out: a GitHub release `zwave-config-<version>` with the tarball and
+# SHA256SUMS (permanent), and the newest ten unpacked on GitHub Pages.
+# A version is built once; a red build publishes nothing.
+name: release
+on:
+  schedule:
+    - cron: '47 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'A @zwave-js/config version (default: the latest)'
+        required: false
+        type: string
+concurrency:
+  group: release
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      built: ${{ steps.version.outputs.built }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Which version
+        id: version
+        env:
+          WANTED: ${{ inputs.version }}
+        run: |
+          version="${WANTED:-$(npm view @zwave-js/config version)}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a version: $version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "zwave-config-$version" >/dev/null 2>&1; then
+            echo "zwave-config-$version is already published"
+            echo "built=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.version.outputs.built == 'true'
+        run: npm ci
+      - if: steps.version.outputs.built == 'true'
+        name: That release of the library
+        run: npm install --no-save --ignore-scripts "@zwave-js/config@${{ steps.version.outputs.version }}"
+      - if: steps.version.outputs.built == 'true'
+        run: npm run typecheck
+      - if: steps.version.outputs.built == 'true'
+        run: npm test
+      - if: steps.version.outputs.built == 'true'
+        name: Build and publish
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          npm run build
+          tarball="zwave-config-catalog-$version.tar.gz"
+          tar -C site/v -czf "$tarball" "$version"
+          sha256sum "$tarball" > SHA256SUMS
+          gh release create "zwave-config-$version" "$tarball" SHA256SUMS \
+            --title "@zwave-js/config $version" \
+            --notes "The resolver, device index and file lists for @zwave-js/config $version ($(jq -r .devices "site/v/$version/manifest.json") index entries). See FORMAT.md."
+
+  pages:
+    needs: build
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: The newest ten releases, unpacked
+        run: |
+          mkdir -p site/v
+          gh release list --limit 100 --json tagName,createdAt --jq '[.[] | select(.tagName | startswith("zwave-config-"))] | sort_by(.createdAt) | reverse | .[:10] | .[].tagName' > tags
+          for tag in $(cat tags); do
+            version="${tag#zwave-config-}"
+            gh release download "$tag" --dir "dl/$version"
+            (cd "dl/$version" && sha256sum -c SHA256SUMS)
+            tar -C site/v -xzf "dl/$version/zwave-config-catalog-$version.tar.gz"
+          done
+          jq -n --rawfile tags tags '($tags | split("\n") | map(select(length > 0) | ltrimstr("zwave-config-"))) as $v | {latest: $v[0], versions: $v}' > site/versions.json
+          cp FORMAT.md README.md site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

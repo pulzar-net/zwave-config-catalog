@@ -1,0 +1,21 @@
+# The builder's own tools and GitHub Actions, weekly in one grouped pull
+# request each; CI gates every bump. @zwave-js/config itself is not bumped
+# here: the release workflow builds each upstream release as it comes.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: "@zwave-js/config"
+    groups:
+      npm:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
