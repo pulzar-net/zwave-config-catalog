@@ -16,9 +16,9 @@
     "esbuild": "0.28.2"
   },
   "devDependencies": {
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "@zwave-js/config": "15.32.4",
-    "quickjs-emscripten": "0.31.0",
+    "quickjs-emscripten": "0.32.0",
     "typescript": "7.0.2"
   }
 }
