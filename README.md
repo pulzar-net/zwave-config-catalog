@@ -17,7 +17,7 @@ and which files each device file reads. The device files themselves stay
 upstream's.
 
 **[The format](FORMAT.md)** | **[Releases](https://github.com/pulzar-net/zwave-config-catalog/releases)** |
-**[Served files](https://pulzar-net.github.io/zwave-config-catalog/versions.json)**
+**[Served files](https://oss.pulzr.net/zwave-config-catalog/versions.json)**
 
 ## Why
 

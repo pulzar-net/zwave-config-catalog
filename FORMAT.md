@@ -15,8 +15,8 @@ themselves are not here: they are upstream's, read from that package.
 
 | | |
 |---|---|
-| `https://pulzar-net.github.io/zwave-config-catalog/versions.json` | `{latest, versions}`: the releases served below, newest first |
-| `https://pulzar-net.github.io/zwave-config-catalog/v/<version>/<file>` | a release's files, for the newest ten |
+| `https://oss.pulzr.net/zwave-config-catalog/versions.json` | `{latest, versions}`: the releases served below, newest first |
+| `https://oss.pulzr.net/zwave-config-catalog/v/<version>/<file>` | a release's files, for the newest ten |
 | GitHub release `zwave-config-<version>` | every release, permanently: `zwave-config-catalog-<version>.tar.gz` (the files below) and `SHA256SUMS` |
 | `https://registry.npmjs.org/@zwave-js%2fconfig/<version>` | the package itself, whose `config/devices/` are the device files (check the tarball against the registry's `dist.integrity`) |
 
